@@ -33,3 +33,6 @@ networks.
 
 2.02 2003/06/06
 	- Corrected typo error in POD. Use of Test::More in tests.
+
+2.03 2003/10/28
+	- UDP Socket forces the IP address given as 'client' host.

@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 2.2 2003/06/06 11:35:41 edelrio Exp $
+#$Id: Watch.pm,v 2.3 2003/10/28 11:09:59 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -20,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 2.2 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 2.3 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -102,6 +102,7 @@ sub watch {
 	$self->{Watcher} = new IO::Socket::INET(
 						PeerAddr  => $self->{Server},
 						PeerPort  => 'bootps(67)',
+						LocalAddr => inet_ntoa($self->{Client}),
 						LocalPort => 'bootpc(68)',
 						Proto     => 'udp',
 						Timeout   => $self->{TimeOut}
