@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 2.0 2002/10/03 12:46:36 edelrio Exp $
+#$Id: Watch.pm,v 2.1 2002/10/08 08:10:07 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -20,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 2.0 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 2.1 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -183,8 +183,8 @@ sub dhcp_query {
 		  53,
                   # length1 = 1
 		  1,
-                  # value1  = DHCPINFORM
-		  8
+                  # value1  = DHCPREQUEST
+		  3
 		  );
     my $query = pack(
 		     # It's horrible, but it works
@@ -292,9 +292,10 @@ Net::DHCP::Watch is a module to help monitor remote DHCP servers. It
 opens an udp socket to send and receive responses to and from a DHCP
 server. It stores the last connection status information.
 
-At the time of this writing, the DHCP protocol has not defined yet a
-failover protocol. This module was written to help to write some
-simple code to implement this feature.
+This module serves to implement This module can help to write some
+simple code to implement a reliable DHCP service over complex or
+simple networks.
+
 
 =head1 METHODS
 
@@ -303,13 +304,13 @@ simple code to implement this feature.
 =item B<new> 
 
 Creates a new Net::DHCP::Watch object. The parameters are passed
-throug a hash with the following keys:
+through a hash with the following keys:
 
 =over 4
 
 =item I<Server>
 
-DHCP server name or IP addres to be monitored (not the local machine
+DHCP server name or IP address to be monitored (not the local machine
 performing the monitoring).
 
 =item I<Server>
@@ -364,6 +365,8 @@ See the directory F<examples> in source distribution for an example.
 
 There should be a Net::DHCP class to handle the DHCP protocol.
 
+=head1 LIMITATIONS
+
 On platforms without I<alarm()> function defined the monitoring can
 hang forever if some network problems show up (cable problem, etc)?
 
@@ -373,6 +376,12 @@ remote DHCP server.
 =head1 AUTHOR
 
 Evilio del Rio, edelrio@icm.csic.es
+
+=head1 ACKNOWLEDGEMENTS
+
+I would like to acknowledge the valuable contributions of the people
+who made suggestions to improve this code, specially to Nick Garfield
+who provided the solution for monitoring disjoint networks.
 
 =head1 SEE ALSO
 

@@ -28,3 +28,6 @@ box.
 	- Now we use unicast DHCPINFORM to allow monitoring on different
 networks.
 
+2.01 2002/10/08
+	- New packet change: unicast DHCPREQUEST.
+
