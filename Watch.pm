@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 1.5 2001/04/20 09:47:58 edelrio Exp $
+#$Id: Watch.pm,v 1.7 2001/04/24 14:34:21 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -20,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 1.5 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 1.7 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -311,11 +311,14 @@ The timeout for network operation (default 10s).
 
 =item B<watch>
 
-Prepares for monitoring.
+Prepares for monitoring. Opens an UDP socket to the server. This
+method could fail or interfere with the operation of a local DHCPd
+server.
 
 =item B<unwatch>
 
-Closes monitoring.
+Closes monitoring. You should use this method before starting any local 
+DHCP server.
 
 =item B<status>
 
@@ -334,6 +337,7 @@ See the directory F<examples> in source distribution for an example.
 =head1 BUGS
 
 There should be a Net::DHCP class to handle the DHCP protocol.
+
 
 On platform without I<alarm()> function defined the monitoring cang
 hang forever if some network problems show up (cable problem)?

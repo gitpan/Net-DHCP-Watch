@@ -10,3 +10,5 @@ Revision history for Perl extension Net::DHCP::Watch.
 	- Example script modifyied to accept parameters and created README.
 	- Test for alarm(2) to support Win32 (and others?) platforms.
 
+1.06  2001/04/23
+        - The example script has been corrected to avoid local port conflicts.

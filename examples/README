@@ -14,3 +14,9 @@ Usage: watch_dhcp.pl [--server=server] [--ether=ether]
  stop:    Command to stop  the local DHCP daemon.
 
 All options have reasonable values on a UNIX machine.
+
+Notes: 
+ .- This script will fail if remote DHCP server contains unresolvable
+ server names in its configuration.
+
+ .- It uses secure shell (ssh and scp) to update configuration files.
