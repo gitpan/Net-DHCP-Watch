@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 2.1 2002/10/08 08:10:07 edelrio Exp $
+#$Id: Watch.pm,v 2.2 2003/06/06 11:35:41 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -20,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 2.1 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 2.2 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -108,7 +108,7 @@ sub watch {
 						)
 	    or carp "Can not watch: $!";
     }
-    return;
+    return $self->{Watcher};
 }
 
 #
@@ -313,7 +313,7 @@ through a hash with the following keys:
 DHCP server name or IP address to be monitored (not the local machine
 performing the monitoring).
 
-=item I<Server>
+=item I<Client>
 
 Name or IP addres to use for the local machine performing the
 monitoring. Since there is no obvious way to determine that, it is

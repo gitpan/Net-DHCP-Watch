@@ -31,3 +31,5 @@ networks.
 2.01 2002/10/08
 	- New packet change: unicast DHCPREQUEST.
 
+2.02 2003/06/06
+	- Corrected typo error in POD. Use of Test::More in tests.

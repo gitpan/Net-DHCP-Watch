@@ -3,9 +3,10 @@ MANIFEST
 Makefile.PL
 Watch.pm
 README
-test.pl
 examples/README
 examples/watch_dhcp.pl
 examples/watch_dhcp.init.d
 examples/watch_dhcp.logrotate
 examples/Makefile.linux
+t/01-use.t
+t/02-watch.t
