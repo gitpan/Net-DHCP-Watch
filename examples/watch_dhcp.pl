@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-#$Id: watch_dhcp.pl,v 1.9 2001/05/10 14:21:11 edelrio Exp $
+#$Id: watch_dhcp.pl,v 1.11 2002/10/03 12:41:56 edelrio Exp $
 #
 use strict;
 use diagnostics;
@@ -9,12 +9,13 @@ use Net::DHCP::Watch;
 use Getopt::Long;
 
 # Parameters
-my ($Server, $Ether, $Timeout, $Sleep, $Wait,
+my ($Server, $Client, $Ether, $Timeout, $Sleep, $Wait,
     $Start, $Stop, $Copy, $Copyf, @Copy_Files, $Ident,
     $help);
 
 GetOptions(
 	   'server:s'     => \$Server,
+           'client:s'     => \$Client,
 	   'ether:s'      => \$Ether,
 	   'timeout:s'    => \$Timeout,
 	   'sleep:s'      => \$Sleep,
@@ -39,8 +40,10 @@ my $sadd   = '/usr/bin/ssh-add';
 #
 $Server ||= '127.0.0.1'; # server name
 # if you are NOT on a UNIX machine
-# ethernet address here
-$Ether  ||= qx[ /sbin/ifconfig eth0 | tail +1 | head -1 | awk '{print \$5}'];
+# put ip and ethernet address here
+$Client ||= qx[/sbin/ifconfig eth0 | /bin/sed 's/:/ /' | /bin/grep "inet addr" | /bin/awk '{print \$3}' ];
+chomp($Client);
+$Ether  ||= qx[ /sbin/ifconfig eth0 | /bin/grep HWaddr | /bin/awk '{print \$5}'];
 chomp($Ether);
 
 $Timeout ||= 10;                              # network timeout
@@ -49,7 +52,7 @@ $Wait    ||= 4;                               # tries before action
 $Start   ||= '/etc/rc.d/init.d/dhcpd start';  # start dhcp server
 $Stop    ||= '/etc/rc.d/init.d/dhcpd stop';   # stop  dhcp server
 $Copy    ||= '';                              # copy dhcpd conf files
-$Ident   ||= $ENV{HOME}.'/.ssh/dhcp-identity';# SSH identity
+$Ident   ||= '/root/.ssh/dhcp-identity';# SSH identity
 $Copyf   ||= '/etc/dhcpd.conf,/var/state/dhcp/dhcpd.leases'; # conf files 
 @Copy_Files = split(/[\s,]+/, $Copyf);                       # to copy
 
@@ -73,6 +76,7 @@ if ($Copy) {
 # Init Monitor
 #
 my $dhcpw = new Net::DHCP::Watch({
+		client  => $Client,
 		server  => $Server,
 		ether   => $Ether,
 		tiemout => $Timeout

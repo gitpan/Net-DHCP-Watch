@@ -8,6 +8,7 @@ LOGROTATE:=/etc/logrotate.d
 LOG:=/var/log/watch_dhcp
 INSTALL:=/usr/bin/install
 TOUCH:=/bin/touch
+CHMOD:=/bin/chmod
 #
 # 
 #
@@ -18,14 +19,16 @@ ROTATE:=watch_dhcp.logrotate
 #
 #
 .PHONY: install
+.SILENT:
 #
 #
 #
 install:
-	$(INSTALL) -C --mode=700 $(DAEMON).pl $(SBIN)
-	$(INSTALL) -C --mode=700 $(INIT)   $(INITD)/$(DAEMON)
-	$(INSTALL) -C --mode=600 $(ROTATE) $(LOGROTATE)/$(DAEMON)
-	$(TOUCH) --no-create --mode=600 $(LOG)
+	$(INSTALL) --mode=700 $(DAEMON).pl $(SBIN)
+	$(INSTALL) --mode=700 $(INIT)   $(INITD)/$(DAEMON)
+	$(INSTALL) --mode=600 $(ROTATE) $(LOGROTATE)/$(DAEMON)
+	$(TOUCH)     $(LOG)
+	$(CHMOD) 600 $(LOG)
 	$(CHKCONFIG) --add $(DAEMON)
 	$(CHKCONFIG) $(DAEMON) on
-
+	/bin/echo "Issue \`service $(DAEMON) start' to start $(DAEMON)."

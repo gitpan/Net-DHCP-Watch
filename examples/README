@@ -2,12 +2,13 @@
 watch_dhcp.pl: monitor a remote DHCP server and launch a local server
 when needed.
 
-Usage: watch_dhcp.pl [--server=server] [--ether=ether]
+Usage: watch_dhcp.pl [--server=server] [--client=client] [--ether=ether]
 	[--timeout=timeout] [--sleep=sleep] [--wait=wait]
 	[--start=start] [--stop=stop]
 	[--scopy=scopy_from] [--copy-files=conf,file,list]
 	[--ident=ident]
  server:  DHCP server name or IP.
+ client:  Local IP address.
  ether:   Local ethernet address.
  timeout: Timeout for network operations.
  sleep:   Interval between monitoring.

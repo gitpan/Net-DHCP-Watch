@@ -24,3 +24,7 @@ Revision history for Perl extension Net::DHCP::Watch.
 	- The example includes files for installation as service in a Linux
 box.
 
+2.00 2002/10/01
+	- Now we use unicast DHCPINFORM to allow monitoring on different
+networks.
+

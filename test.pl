@@ -12,6 +12,7 @@ print "ok 1\n";
 
 # 2: create object
 my $dhcpw = new Net::DHCP::Watch({
+		client => '127.0.0.1',
 		server => '127.0.0.1',
 		ether  => '00:00:00:00:00:00'
 	});

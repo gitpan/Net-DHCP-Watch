@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 1.9 2002/03/01 10:07:15 edelrio Exp $
+#$Id: Watch.pm,v 2.0 2002/10/03 12:46:36 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -20,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 1.9 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 2.0 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -40,14 +40,24 @@ sub new {
 sub init {
     my $self   = shift;
     my $params = shift;
-    $self->{Server} = $params->{server};
+    my $h;
 
-    # test if hostname given is known (name or IP)
-    unless ( my $h = gethost($self->{Server}) ) {
+    # test if server hostname given is known (name or IP)
+    $self->{Server} = $params->{server};
+    unless ( $h = gethost($self->{Server}) ) {
 	carp "Can not resolve: ",$self->{Server};
     }
 
-    # test if ethernet address is an array of six bytes or
+    # test if client hostname given is known (name or IP)
+    # and keep only the first IP address.
+    $self->{Client} = $params->{client};
+    unless ( $h = gethost($self->{Client}) ) {
+	carp "Can not resolve: ",$self->{Client};
+    }
+    $self->{Client} = $h->addr_list->[0];
+
+
+    # test if ethernet address is either an array of six bytes or
     # a string of hex bytes separated by ':'
     $self->{Ether}  = $params->{ether};
 
@@ -150,9 +160,9 @@ sub dhcp_query {
                   # secs
 		  0,
                   # flags
-		  1,
-                  # ciaddr
 		  0,
+                  # ciaddr
+		  $self->{Client},
                   # yiaddr
 		  0,
                   # siaddr
@@ -173,12 +183,12 @@ sub dhcp_query {
 		  53,
                   # length1 = 1
 		  1,
-                  # value1  = DHCPDISCOVER
-		  1
+                  # value1  = DHCPINFORM
+		  8
 		  );
     my $query = pack(
 		     # It's horrible, but it works
-		     'CCCCNnnNNNNCCCCCCCCCCCCCCCCa64a128C*',
+		     'CCCCNnna4NNNCCCCCCCCCCCCCCCCa64a128C*',
 		     @fields
 		     );
     my $serv_address;
@@ -255,11 +265,13 @@ Net::DHCP::Watch - A class for monitoring a remote DHCPD server.
   use Net::DHCP::Watch;
   # server name
   my $Server = 'dhcpd.mydomain.com';
-  # this machine ethernet address
+  # this machine ip and ethernet address
+  my $IP     = '192.168.1.1';
   my $Ether  = '01:23:45:67:89:ab';
   # Net::DHCP::Watch object
   my $dhcpw = new Net::DHCP::Watch({
 		server => $Server,
+                client => $IP,
 		ether  => $Ether
 	});
 
@@ -299,6 +311,12 @@ throug a hash with the following keys:
 
 DHCP server name or IP addres to be monitored (not the local machine
 performing the monitoring).
+
+=item I<Server>
+
+Name or IP addres to use for the local machine performing the
+monitoring. Since there is no obvious way to determine that, it is
+mandatory.
 
 =item I<Ether>
 
@@ -346,7 +364,7 @@ See the directory F<examples> in source distribution for an example.
 
 There should be a Net::DHCP class to handle the DHCP protocol.
 
-On platform without I<alarm()> function defined the monitoring can
+On platforms without I<alarm()> function defined the monitoring can
 hang forever if some network problems show up (cable problem, etc)?
 
 The machine that is running the test MUST BE a KNOWN client of the
