@@ -1,0 +1,330 @@
+#
+#$Id: Watch.pm,v 1.4 2001/04/17 13:32:46 edelrio Exp $
+#
+# Net::DHCP::Watch
+#
+package Net::DHCP::Watch;
+
+use strict;
+use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
+
+use Carp;
+use Socket;
+use Net::hostent;
+use IO::Socket;
+
+require Exporter;
+
+@ISA       = qw(Exporter);
+@EXPORT    = qw();
+@EXPORT_OK = qw();
+
+$VERSION = do { my @r=(q$Revision: 1.4 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+
+#
+# new
+#
+sub new {
+    my $proto  = shift;
+    my $params = shift; 
+    my $class  = ref($proto) || $proto;
+    my $self   = {};
+    bless($self, $class);
+    $self->init($params);
+    return $self;
+}
+#
+# init: initalize parameters.
+#
+sub init {
+    my $self   = shift;
+    my $params = shift;
+    $self->{Server} = $params->{server};
+
+    # test if hostname given is known (name or IP)
+    unless ( my $h = gethost($self->{Server}) ) {
+	croak "Can not resolve: ",$self->{Server};
+    }
+
+    # test if ethernet address is an array of six bytes or
+    # a string of hex bytes separated by ':'
+    $self->{Ether}  = $params->{ether};
+
+    if ( $self->{Ether} =~ m/^([0-9a-f]{1,2}:)+[0-9a-f]{1,2}$/i ) {
+	my @eth = map( hex, split(':', $self->{Ether}) );
+	$self->{Ether} = \@eth;
+    }
+    elsif ( scalar($self->{Ether}) != 6 ) {
+	croak "Not a good ethernet addres: ",$params->{ether};
+    }
+
+    # set the timeout (alarm)
+    $self->{TimeOut} = $params->{timeout} || 10;
+
+    # initialize status result to zero
+    $self->{Last} = {
+	Ok   => 0,
+	Bad  => 0,
+	Time => '0000-00-00 00:00:00 GMT'
+    };
+    return;
+}
+
+#
+# watch: opens the udp socket to the server
+#
+sub watch {
+    my $self = shift;
+    $self->{Watcher} = new IO::Socket::INET(
+				      PeerAddr  => $self->{Server},
+				      PeerPort  => 'bootps(67)',
+				      LocalPort => 'bootpc(68)',
+				      Proto     => 'udp',
+				      Timeout   => $self->{TimeOut}
+				      )
+	or carp "Can not watch: $!";
+    return;
+}
+
+#
+# status: returns the present status
+#
+sub status {
+    my $self = shift;
+    $self->dhcp_query or return;
+    return $self->{Last};
+}
+
+#
+# dhcp_query: sends an udp packet containig a DHCP message 
+# of type DHCPDISCOVER and listens to the reply. The random transaction id
+# must match.
+#
+sub dhcp_query {
+    my $self = shift;
+    my $reply; # holdspace for udp reply
+    #
+    # Test if socket is ok
+    #
+    unless ( $self->{Watcher} ) {
+	carp "Not watching yet!";
+	return;
+    };
+    #
+    # Transaction ID
+    #
+    my $xid = int(rand(2**32-1));
+    #
+    # DHCP Message: Fixed-Format + Options 
+    # (see Droms & Lemon, 1999, Apendixes C and D).
+    #
+    my @fields = (
+                  # op
+		  1,
+                  # htype
+		  1,
+                  # hlen
+		  6,
+                  # hops
+		  0,
+                  # xid
+		  $xid,
+                  # secs
+		  0,
+                  # flags
+		  1,
+                  # ciaddr
+		  0,
+                  # yiaddr
+		  0,
+                  # siaddr
+		  0,
+                  # giaddr
+		  0,
+                  # chaddr
+		  @{ $self->{Ether} },
+		  0,  0,  0,  0,  0,  0, 
+		  0,  0,  0,  0,
+                  # sname
+		  "\0",
+                  # file
+		  "\0",
+                  # Magic cookie (RFC)
+		  99,130,83,99,
+                  # option1 = DHCP-Message
+		  53,
+                  # length1 = 1
+		  1,
+                  # value1  = DHCPDISCOVER
+		  1
+		  );
+    my $query = pack(
+		     # It's horrible, but it works
+		     'CCCCNnnNNNNCCCCCCCCCCCCCCCCa64a128C*',
+		     @fields
+		     );
+    my $serv_address;
+    # SIG handling for alarm()
+    # I/O eval block
+    eval {
+	local $SIG{ALRM} = sub { die "Alarm timeout\n" };
+	# Send query
+	alarm($self->{TimeOut});
+	$self->{Watcher}->send($query, 0);
+	alarm(0);
+	# Get reply
+	alarm($self->{TimeOut});
+	$serv_address = $self->{Watcher}->recv($reply, 1024,  0);
+	alarm(0);
+    };
+    # Die if not alarm
+    if($@) {
+	carp $@ unless $@ =~ /Alarm timeout/i;
+    }
+    # Verify
+    # be sure $ret_xid is not equal to $xid
+    my $ret_xid = !$xid;
+    if ( $reply ) {
+	$ret_xid = unpack('x4N',$reply);
+    }
+    # only if we've got a reply and the reply was correct all is ok.
+    if ( $ret_xid == $xid ) {
+	# Increment Ok count (max: 2**31-1)
+	$self->{Last}->{Ok} %= 2147483647;
+	$self->{Last}->{Ok}++;
+	# Zero Bad
+	$self->{Last}->{Bad} = 0;
+    }
+    else {
+	# Zero ok
+	$self->{Last}->{Ok} = 0;
+	# Increment Bad count (max: 2**31-1)
+	$self->{Last}->{Bad} %= 2147483647;
+	$self->{Last}->{Bad}++;
+    }
+    # Get present time (GMT)
+    $self->{Last}->{Time} = gmtime;
+}
+#
+# close: just closes socket.
+#
+sub unwatch {
+    my $self = shift;
+    delete $self->{Watcher};
+}
+#
+# Cleanup
+# 
+sub DESTROY {
+    my $self = shift;
+    $self->unwatch;
+}
+
+1;
+__END__
+
+=head1 NAME
+
+Net::DHCP::Watch - A class for monitoring a remote DHCPD server.
+
+=head1 SYNOPSIS
+
+
+  use Net::DHCP::Watch;
+  # server name
+  my $Server = 'dhcpd.mydomain.com';
+  # this machine ethernet address
+  my $Ether  = '01:23:45:67:89:ab';
+  # Net::DHCP::Watch object
+  my $dhcpw = new Net::DHCP::Watch({
+		server => $Server,
+		ether  => $Ether
+	});
+
+  # Open network
+  $dhcpw->watch();
+  # Get status
+  my $stat = $dhcpw->status;
+  # print results
+  if ( $stat->{Bad} ) print $stat->{Time},
+    ": Remote DHCP on $Server unavailable (",$stat->{Bad},").\n";
+
+  if ( $stat->{Ok}  ) print $stat->{Time},
+    ": Remote DHCP on $Server online.\n";
+
+=head1 DESCRIPTION
+
+Net::DHCP::Watch is a module to help monitor remote DHCP servers. It
+opens an udp socket to send and receive responses to and from a DHCP
+server. It stores the last connection status information.
+
+=head1 METHODS
+
+=over 4
+
+=item B<new> 
+
+Creates a new Net::DHCP::Watch object. The parameters are passed
+throug a hash with the following keys:
+
+=over 4
+
+=item I<Server>
+
+DHCP server name or IP addres to be monitored.
+
+=item I<Ether>
+
+Ethernet address of the machine performing the monitoring. Since there
+is no obvious way to determine that, it is mandatory. You can pass a 6
+element array of bytes or a ':' separated string of hex values. In
+UNIX machines you can tipically do something like this:
+
+	my $ether = qx[ /sbin/ifconfig eth0 | tail +1 |\
+			head -1 | awk '{print \$5}'];
+	chomp($ether);
+
+=item I<Timeout>
+
+The timeout for network operation (default 10s).
+
+=back
+
+=item B<watch>
+
+Prepares for monitoring.
+
+=item B<unwatch>
+
+Closes monitoring.
+
+=item B<status>
+
+Try to comunicate with the server and returns the status in a hash. The
+hash contains three keywords. I<Ok> will be true if the attempt completed
+successfully, I<Bad> will be true if the attempt was not; they will
+contain the number of successful (or unsuccessful) contiguous attempts
+made. I<Time> contains the GMT time string of the last attempt.
+
+=back
+
+=head1 EXAMPLES
+
+See the directory F<examples> in source distribution for an example.
+
+=head1 BUGS
+
+There should be a Net::DHCP class to handle the DHCP protocol.
+
+=head1 AUTHOR
+
+Evilio del Rio, edelrio@icm.csic.es
+
+=head1 SEE ALSO
+
+L<perl(1)>, L<IO::Socket(3)>, L<Net::hostent(3)>. RFCs 2131 and 2132.
+
+I<Ralph Droms & Ted Lemon>, B<The DHCP Handbook>, MacMillan
+(Indianapolis),  1999.
+
+=cut

@@ -1,0 +1,8 @@
+Revision history for Perl extension Net::DHCP::Watch.
+
+0.01  Tue Apr 10 18:37:31 2001
+	- original version; created by h2xs 1.19
+
+1.02  2001/04/17 13:32:46
+	- Added alarm(2) timeout.
+
