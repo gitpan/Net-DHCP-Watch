@@ -6,3 +6,6 @@ README
 test.pl
 examples/README
 examples/watch_dhcp.pl
+examples/watch_dhcp.init.d
+examples/watch_dhcp.logrotate
+examples/Makefile.linux

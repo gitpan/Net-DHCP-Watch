@@ -19,3 +19,8 @@ Revision history for Perl extension Net::DHCP::Watch.
 1.08  2001/05/10
 	- The status method opens and closes the socket.
 	- Documented the need to be a known client of the server.
+
+1.09  2002/03/01
+	- The example includes files for installation as service in a Linux
+box.
+

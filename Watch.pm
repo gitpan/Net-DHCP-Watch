@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 1.8 2001/05/10 14:21:07 edelrio Exp $
+#$Id: Watch.pm,v 1.9 2002/03/01 10:07:15 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -20,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 1.8 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 1.9 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -361,6 +361,6 @@ Evilio del Rio, edelrio@icm.csic.es
 L<perl(1)>, L<IO::Socket(3)>, L<Net::hostent(3)>. RFCs 2131 and 2132.
 
 I<Ralph Droms & Ted Lemon>, B<The DHCP Handbook>, MacMillan
-(Indianapolis),  1999.
+(Indianapolis), 1999.
 
 =cut
