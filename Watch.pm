@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 1.7 2001/04/24 14:34:21 edelrio Exp $
+#$Id: Watch.pm,v 1.8 2001/05/10 14:21:07 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -20,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 1.7 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 1.8 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -44,7 +44,7 @@ sub init {
 
     # test if hostname given is known (name or IP)
     unless ( my $h = gethost($self->{Server}) ) {
-	croak "Can not resolve: ",$self->{Server};
+	carp "Can not resolve: ",$self->{Server};
     }
 
     # test if ethernet address is an array of six bytes or
@@ -85,14 +85,19 @@ sub init {
 #
 sub watch {
     my $self = shift;
-    $self->{Watcher} = new IO::Socket::INET(
-				      PeerAddr  => $self->{Server},
-				      PeerPort  => 'bootps(67)',
-				      LocalPort => 'bootpc(68)',
-				      Proto     => 'udp',
-				      Timeout   => $self->{TimeOut}
-				      )
-	or carp "Can not watch: $!";
+    if ( $self->{Watcher} ) {
+	carp "Already watching.";
+    }
+    else {
+	$self->{Watcher} = new IO::Socket::INET(
+						PeerAddr  => $self->{Server},
+						PeerPort  => 'bootps(67)',
+						LocalPort => 'bootpc(68)',
+						Proto     => 'udp',
+						Timeout   => $self->{TimeOut}
+						)
+	    or carp "Can not watch: $!";
+    }
     return;
 }
 
@@ -101,7 +106,10 @@ sub watch {
 #
 sub status {
     my $self = shift;
+    # now the watch/unwatch cycle is carried by status.
+    $self->watch unless( $self->{Watcher} );
     $self->dhcp_query or return;
+    $self->unwatch;
     return $self->{Last};
 }
 
@@ -338,9 +346,11 @@ See the directory F<examples> in source distribution for an example.
 
 There should be a Net::DHCP class to handle the DHCP protocol.
 
+On platform without I<alarm()> function defined the monitoring can
+hang forever if some network problems show up (cable problem, etc)?
 
-On platform without I<alarm()> function defined the monitoring cang
-hang forever if some network problems show up (cable problem)?
+The machine that is running the test MUST BE a KNOWN client of the
+remote DHCP server.
 
 =head1 AUTHOR
 

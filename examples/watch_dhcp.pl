@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-#$Id: watch_dhcp.pl,v 1.8 2001/04/25 11:15:34 edelrio Exp $
+#$Id: watch_dhcp.pl,v 1.9 2001/05/10 14:21:11 edelrio Exp $
 #
 use strict;
 use diagnostics;
@@ -79,7 +79,6 @@ my $dhcpw = new Net::DHCP::Watch({
 	});
 
 # start
-$dhcpw->watch();
 # make an infinite loop watching for availability of server,
 # with the following rules:
 my $stat = $dhcpw->status;
@@ -101,8 +100,6 @@ while (1) {
 	}
         #  if server is off-line more than $Wait times: starts local server.
 	if ( $stat->{Bad} > $Wait && !$local_dhcp ) {
-		# close watch socket (interfers with server)
-		$dhcpw->unwatch;
 		my $start_dhcp = qx[ $Start ];
 		$local_dhcp = 1;
 		print $stat->{Time},": Starting local DHCP daemon\n";
@@ -111,7 +108,6 @@ while (1) {
         #  if server is back on-line more than $Wait times: stops local server.
 	if ( $stat->{Ok}  > $Wait && $local_dhcp ) {
 		my $stop_dhcp  = qx[ $Stop ];
-                $dhcpw->watch;
 		print $stat->{Time},": Stoping local DHCP daemon\n";
 		$local_dhcp = 0;
 	}
@@ -122,13 +118,11 @@ continue {
     # we need to stop/start the local server
     if ( $local_dhcp ) {
 	my $stop_dhcp = qx[ $Stop ];
-	$dhcpw->watch;
     }
     # get status   
     $stat = $dhcpw->status;
     # start
     if ( $local_dhcp ) {
-	$dhcpw->unwatch;
         my $start_dhcp = qx[ $Start ];
     }
 }
@@ -172,6 +166,12 @@ sub usage {
 	" files:   List of files that need to be copied (defaults: /etc/dhcpd.conf,/var/state/dhcp/dhcpd.leases).\n",
 	" ident:   SSH Identity to use with scp (default: \${HOME}/.ssh/dhcp-identity.\n";
     print "\nAll options have reasonable values on a UNIX/Linux machine.\n";
+    print
+	" Notes:\n", 
+	"   .- This script will fail if remote DHCP server contains unresolvable server names in its configuration.\n\n",
+      ".- It uses secure shell (ssh and scp) to update configuration files.\n\n",
+      ".- The machine that is running the test MUST BE a KNOWN client of the remote DHCP server.\n";
+
     exit(0);
 }
 
