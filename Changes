@@ -6,3 +6,7 @@ Revision history for Perl extension Net::DHCP::Watch.
 1.02  2001/04/17 13:32:46
 	- Added alarm(2) timeout.
 
+1.05  2001/04/20 11:14:00
+	- Example script modifyied to accept parameters and created README.
+	- Test for alarm(2) to support Win32 (and others?) platforms.
+

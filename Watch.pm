@@ -1,5 +1,5 @@
 #
-#$Id: Watch.pm,v 1.4 2001/04/17 13:32:46 edelrio Exp $
+#$Id: Watch.pm,v 1.5 2001/04/20 09:47:58 edelrio Exp $
 #
 # Net::DHCP::Watch
 #
@@ -9,6 +9,7 @@ use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
 use Carp;
+use Config;
 use Socket;
 use Net::hostent;
 use IO::Socket;
@@ -19,7 +20,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 1.4 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = do { my @r=(q$Revision: 1.5 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 #
 # new
@@ -56,6 +57,15 @@ sub init {
     }
     elsif ( scalar($self->{Ether}) != 6 ) {
 	croak "Not a good ethernet addres: ",$params->{ether};
+    }
+
+    # can we use alarm() ?
+    if ( $Config{d_alarm} eq 'define' ) {
+	$self->{_Alarm} = 1;
+    }
+    else {
+	carp "No alarm() function, network operation may hang";
+	$self->{_Alarm} = 0;
     }
 
     # set the timeout (alarm)
@@ -164,22 +174,26 @@ sub dhcp_query {
 		     @fields
 		     );
     my $serv_address;
-    # SIG handling for alarm()
     # I/O eval block
     eval {
+	# SIG handling for alarm()
 	local $SIG{ALRM} = sub { die "Alarm timeout\n" };
 	# Send query
-	alarm($self->{TimeOut});
+	alarm($self->{TimeOut})
+	    if $self->{_Alarm}; 
 	$self->{Watcher}->send($query, 0);
-	alarm(0);
+	alarm(0)
+	    if $self->{_Alarm};
 	# Get reply
-	alarm($self->{TimeOut});
+	alarm($self->{TimeOut})
+	    if $self->{_Alarm};
 	$serv_address = $self->{Watcher}->recv($reply, 1024,  0);
-	alarm(0);
+	alarm(0)
+	    if $self->{_Alarm};
     };
     # Die if not alarm
     if($@) {
-	carp $@ unless $@ =~ /Alarm timeout/i;
+	carp $@ unless $@ =~ /alarm/i;
     }
     # Verify
     # be sure $ret_xid is not equal to $xid
@@ -258,6 +272,10 @@ Net::DHCP::Watch is a module to help monitor remote DHCP servers. It
 opens an udp socket to send and receive responses to and from a DHCP
 server. It stores the last connection status information.
 
+At the time of this writing, the DHCP protocol has not defined yet a
+failover protocol. This module was written to help to write some
+simple code to implement this feature.
+
 =head1 METHODS
 
 =over 4
@@ -271,14 +289,15 @@ throug a hash with the following keys:
 
 =item I<Server>
 
-DHCP server name or IP addres to be monitored.
+DHCP server name or IP addres to be monitored (not the local machine
+performing the monitoring).
 
 =item I<Ether>
 
-Ethernet address of the machine performing the monitoring. Since there
-is no obvious way to determine that, it is mandatory. You can pass a 6
-element array of bytes or a ':' separated string of hex values. In
-UNIX machines you can tipically do something like this:
+Ethernet address of the local machine performing the monitoring. Since
+there is no obvious way to determine that, it is mandatory. You can
+pass a 6 element array of bytes or a ':' separated string of hex
+values. In UNIX machines you can tipically do something like this:
 
 	my $ether = qx[ /sbin/ifconfig eth0 | tail +1 |\
 			head -1 | awk '{print \$5}'];
@@ -315,6 +334,9 @@ See the directory F<examples> in source distribution for an example.
 =head1 BUGS
 
 There should be a Net::DHCP class to handle the DHCP protocol.
+
+On platform without I<alarm()> function defined the monitoring cang
+hang forever if some network problems show up (cable problem)?
 
 =head1 AUTHOR
 

@@ -1,0 +1,16 @@
+
+watch_dhcp.pl:	monitor a remote DHCP server and launch a local server when needed.
+
+Usage: watch_dhcp.pl [--server=server] [--ether=ether]
+	[--timeout=timeout] [--sleep=sleep] [--wait=wait]
+	[--start=start] [--stop=stop]
+
+ server:  DHCP server name or IP.
+ ether:   Local ethernet address.
+ timeout: Timeout for network operations.
+ sleep:   Interval between monitoring.
+ try:     Number of successive (bad/ok) tries before taking action (start/stop).
+ start:   Command to start the local DHCP daemon.
+ stop:    Command to stop  the local DHCP daemon.
+
+All options have reasonable values on a UNIX machine.
